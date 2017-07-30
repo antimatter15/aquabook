@@ -65,7 +65,7 @@
 .bread-row.insert-bottom .divider.divider-bottom,
 .bread-col.insert-left .vertical-divider.divider-left,
 .bread-col.insert-right .vertical-divider.divider-right {
-  background: #4CAF50;
+  background: #585858;
   opacity: 1;
 }
 
@@ -200,9 +200,9 @@ body {
 }
 
 .slice-header {
-    padding: 7px 10px;
-    /* color: white; */
-    background: #4CAF50;
+    padding: 10px 15px;
+     color: white; 
+    background: #353535;
     cursor: pointer;
     display: flex;
     white-space: nowrap;
@@ -213,10 +213,11 @@ body {
     background: transparent;
     cursor: pointer;
     border-radius: 3px;
+    color: white;
 }
 
 .slice-header button:hover {
-    background: rgba(255,255,255,0.5);
+    background: rgba(255, 0, 0, 0.35);
 }
 
 .slice-header .button-toggle {
