@@ -2,11 +2,14 @@ import { run_programs, fitProgramTable } from './program'
 import _ from "lodash"
 
 let queryQueue;
+let lastProcessed;
 
 function processNext(){
     let sheets = queryQueue;
     queryQueue = null;
+    
     if(!sheets) return;
+    lastProcessed = sheets.map(_.clone);
 
     let changes = {}
 
@@ -33,8 +36,19 @@ function processNext(){
 }
 
 onmessage = function(e){
-    let sheets = e.data;
-    queryQueue = sheets;
+    let sheets = e.data.map(k => ({ 
+        data: k.data, 
+        programs: k.programs, 
+        id: k.id,
+        autoprograms: k.autoprograms,
+        rowCount: k.rowCount,
+        colCount: k.colCount
+    }));
+
+    if(!_.isEqual(sheets, lastProcessed)){
+        // console.log(sheets, e.data)
+        queryQueue = sheets;    
+    }
 }
 
 

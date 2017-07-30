@@ -15,7 +15,7 @@ export function run_program(env, program, i, j, sheets=null){
         // console.log(all, rj, ri)
         // return JSON.stringify([ri, rj])
         var val = env[ri + ':' + rj].value;
-        // if(val === '') throw new Error('no value');
+        if(val === '') throw new Error('no value');
 
         if(/^\-?\d+$/.test(val)) val = parseFloat(val, 10);
         return val
@@ -95,11 +95,15 @@ export function run_program(env, program, i, j, sheets=null){
         if(key_col === lookup_col) throw new Error('lookup col must not be key col');
         if(!sheets[sheet_index]) throw new Error('can not vlookup on same sheet');
 
+        // console.log(value, sheet_index, key_col, lookup_col, sheets)
         for(var i = 0; i < sheets[sheet_index][1].rowCount; i++){
-            if(sheets[sheet_index][0][i + ':' + key_col].value === value){
-                return sheets[sheet_index][0][i + ':' + lookup_col].value
+            if(sheets[sheet_index][0][i + ':' + key_col].value + '' === value + ''){
+                let found = sheets[sheet_index][0][i + ':' + lookup_col].value
+                // console.log('found', found)
+                return found
             }
         }
+        return 'NULL'
     }
 
     var ROW = i + 1,
@@ -236,7 +240,7 @@ function fitProgramColumn(state, result, j, sheets = null){
                 .replace(/\".*?\"/g, '2').length / 100
     );
 
-    // console.log(sorted)
+    console.log(sorted)
 
     for(let prog of sorted){
         // console.log(prog, j)
@@ -277,18 +281,19 @@ function* enumerateJoinPrograms(inputs, output, sheets){
 
 
 function* enumerateUnaryPrograms(input, output){
-        yield JSON.stringify(output);
-        yield* enumerateSlice(input, output)
-        yield* enumerateTransform(input, output)
-        yield* enumerateNumberTransform(input, output)
-        yield* enumerateAddConstant(input, output)
-        yield* enumerateMultiplyConstant(input, output)
-        yield* enumerateKnownLists(input, output)
-        yield* enumerateKnownInvLists(input, output)
-        yield* enumerateWord(input, output)
-        yield* enumerateToken(input, output)
-        yield* enumerateStringMultiply(input, output)
-        yield* enumerateRomanConvert(input, output)
+    yield JSON.stringify(output);
+    yield* enumerateSlice(input, output)
+    yield* enumerateTransform(input, output)
+    yield* enumerateNumberTransform(input, output)
+    yield* enumerateAddConstant(input, output)
+    yield* enumerateSubtractConstant(input, output)
+    yield* enumerateMultiplyConstant(input, output)
+    yield* enumerateKnownLists(input, output)
+    yield* enumerateKnownInvLists(input, output)
+    yield* enumerateWord(input, output)
+    yield* enumerateToken(input, output)
+    yield* enumerateStringMultiply(input, output)
+    yield* enumerateRomanConvert(input, output)
 
 }
 
@@ -321,7 +326,7 @@ function* enumerateUnaryProgramsByInputs(inputs, output){
 
 
 function* factorizeString(inputs, output){
-    for(let program of recursiveStringFactorization(inputs, output)){
+    for(let program of recursiveStringFactorization2(inputs, output)){
         var fixed = program
             .filter(k => !(typeof k == 'string' && k.length == 0))
             .reduce((acc, k) => {
@@ -341,12 +346,60 @@ function* factorizeString(inputs, output){
     }
 }
 
-function* recursiveStringFactorization(inputs, output){
+function* enumerateTailSlice(input, output){
+    for(var j = 1; j < input.length; j++){
+        for(let p of enumerateTransform(input.slice(0, j), output)){
+            yield p.replace(/\$/g, 'SLICE($,0,' + j + ')'  )
+        }
+    }
+}
+
+function capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function* enumerateTransform(input, output){
+    if(!input) return;
+    if(!output) return;
+
+    if(input === output){
+        yield '$'
+    }
+    if(input.toString().toUpperCase() === output){
+        yield 'UPPER($)'
+    }
+    if(input.toString().toLowerCase() === output){
+        yield 'LOWER($)'
+    }
+
+    if(capitalizeFirstLetter(input.toString()) === output){
+        yield 'CAP($)'
+    }
+
+
+}
+
+function* augmentInputs(inputs){
+    for(let [name, input] of inputs){
+        yield [name, input]
+        yield ['UPPER(' + name + ')', input.toString().toUpperCase()]
+        yield ['LOWER(' + name + ')', input.toString().toLowerCase()]    
+
+        for(let i = 0; i < input.length; i++){
+            yield ['SLICE(' + name + ',0,' + i + ')', input.toString().slice(0, i)]
+        }
+
+
+    }
+}
+
+function* recursiveStringFactorization2(inputs, output){
     yield [output];
     if(output.length == 0) return;
-    for(let [name, input] of inputs){
+    for(let [name, input] of augmentInputs(inputs)){
         input = input.toString()
         if(input.length == 0) continue;
+
         let pos = output.indexOf(input);
         if(pos != -1){
             for(let prog of recursiveStringFactorization(inputs, output.slice(pos + input.length))){
@@ -354,23 +407,54 @@ function* recursiveStringFactorization(inputs, output){
                 yield [output.slice(0, pos + input.length)].concat(prog)
             }
         }
+
+
+    }
+}
+
+
+
+
+function* recursiveStringFactorization(inputs, output){
+    yield [output];
+    if(output.length == 0) return;
+    for(let [name, input] of inputs){
+        input = input.toString()
+        if(input.length == 0) continue;
+
+        
+        let pos = output.indexOf(input);
+        if(pos != -1){
+            for(let prog of recursiveStringFactorization(inputs, output.slice(pos + input.length))){
+                yield [output.slice(0, pos), {input, name}].concat(prog);
+                yield [output.slice(0, pos + input.length)].concat(prog)
+            }
+        }
+
+
     }
 }
 
 
 function* enumeratePrograms(inputs, output){
     yield* enumerateUnaryProgramsByInputs(inputs, output)
-    yield* enumerateAddTerms(inputs, output)
+    yield* enumerateAddSubtractTerms(inputs, output)
     // console.log(inputs)
     // yield* recursiveEnumeratePrograms(inputs, output)
 }
 
 
-function* enumerateAddTerms(inputs, output){
+function* enumerateAddSubtractTerms(inputs, output){
     for(let i = 0; i < inputs.length; i++){
         for(let j = 0; j < i; j++){
             if(parseFloat(inputs[i][1]) + parseFloat(inputs[j][1]) == parseFloat(output)){
-                yield inputs[i][0] + ' + ' + inputs[j][0]
+                yield inputs[i][0] + '+' + inputs[j][0]
+            }
+            if(parseFloat(inputs[i][1]) - parseFloat(inputs[j][1]) == parseFloat(output)){
+                yield inputs[i][0] + '-' + inputs[j][0]
+            }
+            if(parseFloat(inputs[j][1]) - parseFloat(inputs[i][1]) == parseFloat(output)){
+                yield inputs[j][0] + '-' + inputs[i][0]
             }
         }
     }
@@ -510,17 +594,31 @@ function* enumerateAddConstant(input, output){
     if(parseFloat(input) === parseFloat(output)){
         yield '$'
     }else{
-        yield '$ + ' + (parseFloat(output)-parseFloat(input))  
+        let quantity = (parseFloat(output)-parseFloat(input));
+        if(quantity < 0){
+            yield '$-' + (-quantity)
+        }else{
+            yield '$+' + quantity  
+        }
     }
     
 }
+
+
+function* enumerateSubtractConstant(input, output){
+    if(!isFinite(parseFloat(input))) return;
+    if(!isFinite(parseFloat(output))) return;
+    if(parseFloat(input) === parseFloat(output)) return;
+    yield (parseFloat(input)+parseFloat(output)) + '-$' 
+}
+
     
 
 function* enumerateMultiplyConstant(input, output){
     if(!isFinite(parseFloat(input))) return;
     if(!isFinite(parseFloat(output))) return;
     if(input === output) return;
-    yield '$ * ' + (parseFloat(output)/parseFloat(input))
+    yield '$*' + (parseFloat(output)/parseFloat(input))
 }
     
 

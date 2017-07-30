@@ -32,6 +32,7 @@ class AquaCell extends React.Component {
                 type="text" 
                 onKeyDown={e => {
                     if(e.keyCode == 13){
+
                         // props.update(setFocus(props.data, props.i+(e.shiftKey ? -1 : 1), 0))
                         if(e.metaKey){
                             props.update(setFocus(props.data, props.i+(e.shiftKey ? -1 : 1), 0))
@@ -49,6 +50,13 @@ class AquaCell extends React.Component {
                     }else if(e.keyCode == 37){ // left
                         if(e.target.selectionEnd == e.target.selectionStart && e.target.selectionEnd == 0){
                             props.update(setFocus(props.data, props.i, props.j - 1))  
+                        }
+                    }else if(e.keyCode === 27){ // escape
+                        try {
+                            let value = eval(manual).toString();
+                            props.update(set_cell(...cell, value))
+                        } catch (err) {
+                            console.error(err)
                         }
                     }
                 }}
@@ -102,7 +110,7 @@ function AquaRow(props){
 
 
 function col_error(data, result, j){
-    if(!result) return false;
+    // if(!result) return false;
     for(var i = 0; i < data.rowCount; i++){
         if(!result[i + ':' + j].error){
             return false
@@ -287,6 +295,17 @@ export default class Demo extends React.Component {
             }
             this.setState({})
         }
+
+        global.dump = () => {
+            for(let { items } of this.state.layout){
+                for(let sheet of items){
+                    delete sheet.index
+                    delete sheet.result
+                }
+            }
+            console.log(JSON.stringify(this.state.layout))
+        }
+
     }
 
     render() {
@@ -303,13 +322,50 @@ export default class Demo extends React.Component {
             sheet.result = run_programs(sheet, 
                 sheets.map((m, n) => n>=i ? null:[sheets[n].result, m])))
 
+
         return <div>
+            <div className="header">
+                <div className="inner" style={{padding: '20px 5px'}}>
+                    <p><b>aquabook</b> is a prototype of a new kind of <b>spreadsheet</b></p>
+                    <p>it learns your intent, so you don't have to code</p>
+                    <p>
+                        <b>samples: </b> 
+                            <a href="javascript:void(0)" onClick={e => 
+                                this.setState({ layout: require('./data/directors.json') })}>movie directors</a>, {' '}
+                            <a href="javascript:void(0)" onClick={e => 
+                                this.setState({ layout: require('./data/department.json') })}>company departments</a>, {' '}
+                            <a href="javascript:void(0)" onClick={e => 
+                                this.setState({ layout: require('./data/sequence.json') })}>integer sequences</a>, {' '}
+                            <a href="javascript:void(0)" onClick={e => 
+                                this.setState({ layout: require('./data/dates.json') })}>transforming dates</a>, {' '}
+                            <a href="javascript:void(0)" onClick={e => 
+                                this.setState({ layout: require('./data/lists.json') })}>common lists</a>, {' '}
+                            <a href="javascript:void(0)" onClick={e => 
+                                this.setState({ layout: require('./data/names.json') })}>names</a>
+                    </p>
+                    <p>
+
+                        {' '}(alternatively, raw data for <a href="javascript:void(0)" onClick={e => 
+                            this.setState({ layout: require('./data/directors-raw.json') })}>directors</a>, <a href="javascript:void(0)" onClick={e => 
+                            this.setState({ layout: require('./data/department-raw.json') })}>department</a>)
+                    </p>
+                </div>
+            </div>
             <BreadLoaf 
                 ref={e => this.loaf = e} 
                 layout={this.state.layout}
                 makeSlice={e => _.cloneDeep(EMPTY_SHEET)}
                 updateLayout={e => this.setState({ layout: e })}
-                element={ <Slice sheets={sheets} /> }  />
+                element={ <Slice sheets={sheets} /> } 
+                footer={
+        <div className="fake-row row-1" onClick={e => this.loaf.append(_.cloneDeep(EMPTY_SHEET))}>
+          <span>
+            <div className="bread-col">
+              <div className="fake-slice">+</div>
+            </div>
+          </span>
+        </div>
+        } />
 
         </div>     
     }
