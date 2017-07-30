@@ -327,7 +327,7 @@ export default class Demo extends React.Component {
             <div className="header">
                 <div className="inner" style={{padding: '20px 5px'}}>
                     <p><b>aquabook</b> is a prototype of a new kind of <b>spreadsheet</b></p>
-                    <p>it learns your intent, so you don't have to code</p>
+                    <p>it learns your <i>intent</i>, so you don't have to code</p>
                     <p>
                         <b>samples: </b> 
                             <a href="javascript:void(0)" onClick={e => 
@@ -340,6 +340,8 @@ export default class Demo extends React.Component {
                                 this.setState({ layout: require('./data/dates.json') })}>transforming dates</a>, {' '}
                             <a href="javascript:void(0)" onClick={e => 
                                 this.setState({ layout: require('./data/lists.json') })}>common lists</a>, {' '}
+                            <a href="javascript:void(0)" onClick={e => 
+                                this.setState({ layout: require('./data/golden.json') })}>golden ratio</a>, {' '}
                             <a href="javascript:void(0)" onClick={e => 
                                 this.setState({ layout: require('./data/names.json') })}>names</a>
                     </p>
