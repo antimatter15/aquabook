@@ -1,48 +1,127 @@
+
+* {
+  box-sizing: border-box;
+}
+
 .App {
-  height: 100%;
-  min-height: 400px;
-  text-align: center;
+  margin: 40px;
+
+  width: 80vw;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.notebook > .table {
+  margin-bottom: 30px;
+}
+
+h1 {
+  font-weight: 100;
+  color: #565656;
+  font-size: 40px;
+}
+
+.table {
+    border: 1px solid gray;
+    width: 100%;
+    border-collapse: collapse;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+
+tr:nth-child(odd) {
+  background: #f2f2f2
+}
+
+tr.header {
+    background: #585858;
+    /* border-top-left-radius: 3px; */
+    border-top-left-radius: 12px;
+    overflow: hidden;
+}
+
+
+
+.table th {
+    border: 1px solid #717171;
+}
+
+.table th.error {
+  background: #bf0d00;
+      border: 1px solid red;
+}
+
+
+.table td {
+    border: 1px solid #dcdcdc;
+}
+
+
+.table td.error {
+  background: #fff0eb;
+}
+
+.table td.mismatched {
+  border: 2px solid red;
+  background: #ffd1d1;
+}
+
+.table td.mismatched input {
+  margin-bottom: -1px;
+  margin-right: -1px;
+  outline: none;
+}
+
+.table th .colheader {
   display: flex;
-  flex-direction: column;
-  justify-content: stretch;
 }
 
-.App-flex {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.table th .colheader .colname {
+  padding: 10px;
+  cursor: pointer;
+    border-right: 1px solid #717171;
+  color: white;
+  font-size: 1em;
+  transition: background 0.2s linear;
 }
 
-.App-heading {
-  background-color: #222;
-  color: #f8f8f8;
-  font-size: 6vh;
-  box-shadow: 0px 4px 4vh 4px rgba(34,34,34,0.9);
-  z-index: 2;
+.table th .colheader .colname:hover {
+  background: #444;
 }
 
-.App-react {
-  color: #00d8ff;
-  text-decoration: overline underline;
+.table th .colheader input {
+  flex-grow: 1;
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1em;
 }
 
-.App-logo {
-  max-height: 30vh;
-  max-width: 30vh;
+.table td input {
+  padding: 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-size: 1em;
 }
 
-.App-instructions {
-  background-color: #f8f8f8;
-  color: #222;
-  font-size: 3vh;
-  line-height: 1.5;
-  padding: 0 1em;
+.add-button {
+    /* border: 1px solid gray; */
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    font-size: 52px;
+    background: #585858;
+    color: white;
+    cursor: pointer;
 }
 
-.App-instructions code {
-  background-color: #222;
-  color: #00d8ff;
-  padding: .2em .3em;
-  border-radius: .2em;
-}
+
+/*.table th {
+  border: 1px solid #ddd;
+  padding: 10px;
+  color: white;
+  text-align: left;
+}*/

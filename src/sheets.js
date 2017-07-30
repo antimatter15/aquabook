@@ -14,6 +14,7 @@ function clone_state(state){
 
 
 function program_auto(state, j){
+  // return '' //j + '?'
   return state.autoprograms[j] || ''
 }
 
@@ -32,9 +33,7 @@ function set_cell(state, i, j, value){
 }
 
 
-function run_program(env, program, i, j, sheets=null){
-  // if(program.trim().toLowerCase() === 'data') return '';
-
+function run_program(env, program, i, j){
   function lookup(ri, rj){
     if(ri < 0) throw new Error('invalid row index');
     if(rj < 0) throw new Error('invalid column index');
@@ -100,23 +99,8 @@ function run_program(env, program, i, j, sheets=null){
   function ROMAN(n){
     return Roman.toRoman(parseInt(n))
   }
-
-
-  function VLOOKUP(value, sheet_index=0, key_col=0, lookup_col=0){
-    if(key_col === lookup_col) throw new Error('lookup col must not be key col');
-    if(!sheets[sheet_index]) throw new Error('can not vlookup on same sheet');
-
-    for(var i = 0; i < sheets[sheet_index][1].rowCount; i++){
-      if(sheets[sheet_index][0][i + ':' + key_col].value === value){
-        return sheets[sheet_index][0][i + ':' + lookup_col].value
-      }
-    }
-  }
-
   var ROW = i + 1,
       COL = j + 1;
-  
-  var DATA = '';
   
   // with(scope){
     return castString(eval(prefix + program))
@@ -131,7 +115,7 @@ function castString(x){
 }
 
 
-function run_programs(state, sheets=null){
+function run_programs(state){
 
   var env = {};
 
@@ -141,7 +125,7 @@ function run_programs(state, sheets=null){
         pa = program_auto(state, j);
     var program = pc || pa;
 
-    run_column(program, env, state, j, sheets)
+    run_column(program, env, state, j)
 
     for(var i = 0; i < state.rowCount; i++){
       let c = env[i + ':' + j];
@@ -153,12 +137,12 @@ function run_programs(state, sheets=null){
 }
 
 
-function run_column(program, env, state, j, sheets=null){
+function run_column(program, env, state, j){
   // compute all the rows
   for(var i = 0; i < state.rowCount; i++){
     var error = null;
     try {
-      var pp = run_program(env, program, i, j, sheets)
+      var pp = run_program(env, program, i, j)
     } catch (err) { error = err }
 
     var manual = cell_manual(state, i, j)
@@ -216,9 +200,7 @@ class AquaCell extends React.Component {
           }
         }}
         ref={(input) => { this.textInput = input; }}
-        onFocus={e => 
-          props.update(setFocus(props.data, props.i, props.j))
-        }
+        onFocus={e => props.update(setFocus(props.data, props.i, props.j))}
         onChange={e => props.update(set_cell(...cell, e.target.value))}
         value={manual} 
         placeholder={auto} />
@@ -278,9 +260,7 @@ function AquaHeaderCell(props){
   
   return <th className={(col_error(props.data, props.result, j) ? 'error ':'')}>
     <div className={"colheader "}>
-      <div className="colname" onClick={e => 
-        props.update(set_program(props.data, j, program_auto(props.data, j) || 'DATA'))
-      }>{COLNAMES[j]}</div>
+      <div className="colname">{COLNAMES[j]}</div>
       <input 
         type="text" 
         onFocus={e => props.update({ focus: [-1, j] })}
@@ -324,11 +304,10 @@ function AquaTable(props){
 }
 
 
-function fitProgramTable(state, result, sheets=null){
-
+function fitPrograms2(state, result){
   var auto_programs = {}
   for(var j = 0; j < state.colCount; j++){
-    var prog = fitProgramColumn(state, result, j, sheets)
+    var prog = fitProgram(state, result, j)
     if(prog){
       auto_programs[j] = prog;
     }
@@ -336,7 +315,7 @@ function fitProgramTable(state, result, sheets=null){
   return auto_programs;
 }
 
-function fitProgramColumn(state, result, j, sheets = null){
+function fitProgram(state, result, j){
   var working_programs = {}
   // for each row
   for(var i = 0; i < state.rowCount; i++){
@@ -360,17 +339,6 @@ function fitProgramColumn(state, result, j, sheets = null){
         working_programs[program]++  
       }
     }
-
-    if(sheets){
-      for(let program of enumerateJoinPrograms(inputs, output, sheets)){
-        if(!working_programs[program]){
-          working_programs[program] = 1
-        }else{
-          working_programs[program]++  
-        }
-      }
-    }
-
     // console.log(name, value, output)
   }
 
@@ -388,38 +356,13 @@ function fitProgramColumn(state, result, j, sheets = null){
 
   for(let prog of sorted){
     // console.log(prog, j)
-    if(checkProgram(state, result, prog, j, sheets)){
+    if(checkProgram(state, result, prog, j)){
 
       return prog
     }
   }
 
   
-}
-
-function* enumerateJoinPrograms(inputs, output, sheets){
-  for(var s = 0; s < sheets.length; s++){
-    if(!sheets[s]) continue;
-
-    for(var i = 0; i < sheets[s][1].rowCount; i++){
-      for(var j = 0; j < sheets[s][1].colCount; j++){
-
-        if(sheets[s][0][i + ':' + j] && sheets[s][0][i + ':' + j].value == output){
-          // search row for matching inputs
-
-          for(let [name, input] of inputs){
-            for(var j1 = 0; j1 < sheets[s][1].colCount; j1++){
-              if(j1 === j) continue;
-
-              if(sheets[s][0][i + ':' + j1] && sheets[s][0][i + ':' + j1].value == input){
-                yield 'VLOOKUP(' + name + ',' + s + ',' + j1 + ',' + j + ')'
-              }
-            }
-          }
-        }
-      }
-    }
-  }
 }
 
 
@@ -435,7 +378,6 @@ function* enumerateUnaryPrograms(input, output){
     yield* enumerateWord(input, output)
     yield* enumerateStringMultiply(input, output)
     yield* enumerateRomanConvert(input, output)
-
 }
 
 function* enumerateRomanConvert(input, output){
@@ -461,48 +403,7 @@ function* enumerateUnaryProgramsByInputs(inputs, output){
       yield program.replace(/\$/g, name);
     }
   }
-
-  yield* factorizeString(inputs, output)
 }
-
-
-function* factorizeString(inputs, output){
-  for(let program of recursiveStringFactorization(inputs, output)){
-    var fixed = program
-      .filter(k => !(typeof k == 'string' && k.length == 0))
-      .reduce((acc, k) => {
-        if(typeof acc[acc.length - 1] == 'string' && typeof k == 'string'){
-          acc[acc.length - 1] += k
-          return acc
-        }else{
-          return acc.concat([k])
-        }
-      }, [])
-    var program = fixed.map(k => 
-      (typeof k === 'object') ? 
-        k.name : 
-        JSON.stringify(k)).join('+')
-    // console.log(program)
-    yield program
-  }
-}
-
-function* recursiveStringFactorization(inputs, output){
-  yield [output];
-  if(output.length == 0) return;
-  for(let [name, input] of inputs){
-    input = input.toString()
-    if(input.length == 0) continue;
-    let pos = output.indexOf(input);
-    if(pos != -1){
-      for(let prog of recursiveStringFactorization(inputs, output.slice(pos + input.length))){
-        yield [output.slice(0, pos), {input, name}].concat(prog);
-        yield [output.slice(0, pos + input.length)].concat(prog)
-      }
-    }
-  }
-}
-
 
 function* enumeratePrograms(inputs, output){
   yield* enumerateUnaryProgramsByInputs(inputs, output)
@@ -574,7 +475,6 @@ var LISTS = {
 }
 
 function* enumerateKnownLists(input, output){
-  if(!/^\d+$/.test(input)) return;
   var index = parseInt(input)-1
   if(!isFinite(index)) return;
 
@@ -645,16 +545,19 @@ function* enumerateInputs(state, result, i, j){
 
 
 
-function checkProgram(state, result, program, j, sheets=null){
+function checkProgram(state, result, program, j){
   var env = Object.assign({}, result);
-  run_column(program, env, state, j, sheets)
+  run_column(program, env, state, j)
   var correct = 0,
       examples = 0;
   for(var i = 0; i < state.rowCount; i++){
     var ref = result[i + ':' + j].concrete
     if(!ref) continue;
 
+
     var value = env[i + ':' + j].value;
+
+
     examples++
     if(value === ref){
       correct++
@@ -662,6 +565,8 @@ function checkProgram(state, result, program, j, sheets=null){
   }
 
   // console.log(correct, "/", examples)
+    
+
   return correct === examples && examples > 1
 }
 
@@ -707,7 +612,6 @@ function* enumerateTransform(input, output){
   }
 }
 
-
 const EMPTY_SHEET = {
   data: {
     // '0:0': 'yolo'
@@ -724,165 +628,53 @@ const EMPTY_SHEET = {
   colCount: 4
 }
 
-var cachedResults = []
 class App extends Component {
   constructor(){
     super()
 
     this.state = {
-      sheets: [_.cloneDeep(EMPTY_SHEET)]
+      sheets: [clone(EMPTY_SHEET)]
     }
-
-
-    setInterval(() => {
-      var dirty = false;
-      var nextSheets = this.state.sheets.map((sheet, i) => {
-        var result = cachedResults[i]
-        if(!result) return sheet;
-
-        var progs = fitProgramTable(sheet, result, 
-          this.state.sheets.map((m, n) => n>=i ? null:[cachedResults[n], m])
-        )
-        if(!_.isEqual(progs, sheet.autoprograms)){
-          dirty = true;
-          return Object.assign({}, sheet, { autoprograms: progs })
-        }else{
-          return sheet
-        }
-      })
-      if(dirty){
-        console.log('changing', nextSheets)
-        this.setState({ sheets: nextSheets })
-      }
-    }, 500)
-
   }
   render() {
     
-    cachedResults = this.state.sheets.map((sheet, i) => {
-      return run_programs(sheet, 
-        this.state.sheets.map((m, n) => n>=i ? null:[cachedResults[n], m]))
-    })
+    // setTimeout(() => {
+    //   var progs = fitPrograms2(this.state, result)
+    //   if(!_.isEqual(progs, this.state.autoprograms)){
+    //     this.setState({ autoprograms: progs })
+    //   }
+    // }, 10)
 
     return (
       <div className="App">
         <h1>Aquabook</h1>
-        <div className="notebook">
         {
           this.state.sheets.map((sheet, i) => 
             <AquaTable key={i} 
-                       result={cachedResults[i]} 
+                       result={run_programs(sheet)} 
                        data={sheet} 
-                       sheets={this.state.sheets.map((m, n) => n>=i ? null:[cachedResults[n], m])}
                        update={data => this.setState({ sheets: 
                         updateIndex(this.state.sheets, i, data)})} />
           )
         }
-        <div className="add-button" onClick={e => 
+        
+        <button onClick={e => 
           this.setState({ 
             sheets: 
-            this.state.sheets.concat([_.cloneDeep(EMPTY_SHEET)]) 
+            this.state.sheets.concat([clone(EMPTY_SHEET)]) 
           })
-        }>+</div>
-        </div>
-        
-        
+        }>+</button>
       </div>
     );
   }
 }
 
-
-
 function updateIndex(arr, index, replacement){
-  return arr.map((k, i) => i === index ? 
-    Object.assign({}, k, replacement) : 
-    Object.assign({}, k, { focus: [-1, -1]}))
+  return arr.map((k, i) => i === index ? Object.assign({}, k, replacement) : k)
 }
 
-// export default App;
-
-import BreadLoaf from 'breadloaf'
-import './layout.css'
-
-
-class Slice extends React.Component {
-  render(){
-
-    var i = 0;
-    var sheet = this.props.view;
-    var sheets = []
-    return <div className="slice">
-      <div className="slice-header" onMouseDown={this.props.beginDrag}>
-        <div style={{flexGrow: 1}}>drag to move this</div>
-
-        <button onClick={this.props.fork}>fork</button>
-        <button onClick={this.props.close}>&times;</button>
-      </div>
-      
-      <AquaTable result={cachedResults[i]} 
-                 data={sheet} 
-                 sheets={sheets.map((m, n) => n>=i ? null:[cachedResults[n], m])}
-                 update={data => this.props.updateView(data) } />
-    </div>
-  }
+function clone(x){
+  return JSON.parse(JSON.stringify(x))
 }
 
-
-export default class Demo extends React.Component {
-  // state = { layout: [] };
-
-
-  state = {
-    // data: ["Ratchet & Clank", "Going Commando", "Up Your Arsenal", "Ratchet: Deadlocked", "Tools of Destruction", "Quest for Booty", "A Crack in Time", "Into the Nexus"],
-    layout: [{ rowId: 'xyz', items: [ Object.assign(
-      _.cloneDeep(EMPTY_SHEET), { id: 'asdfj'}) ]}]
-  }
-
-  render() {
-
-    let sheets = []
-    for(let { items } of this.state.layout){
-      for(let sheet of items){
-        sheets.push(sheet)
-      }
-    }
-
-
-
-
-    cachedResults = sheets.map((sheet, i) => {
-      return run_programs(sheet, 
-        sheets.map((m, n) => n>=i ? null:[cachedResults[n], m]))
-    })
-
-    return <div>
-      <div className="header">
-          <h1>Aquabook</h1>
-        </div>
-    
-      <BreadLoaf 
-        ref={e => this.loaf = e} 
-        layout={this.state.layout}
-        updateLayout={e => this.setState({ layout: e })}
-        element={
-          <Slice />
-        }
-        footer={
-        <div className="fake-row row-1" onClick={e => this.loaf.append({})}>
-          <span>
-            <div className="bread-col">
-              <div className="fake-slice">+</div>
-            </div>
-          </span>
-        </div>
-        }
-         />
-
-    </div>
-
-
-   
-  }
-}
-
+export default App;
