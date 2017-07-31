@@ -326,14 +326,14 @@ export default class Demo extends React.Component {
         return <div>
             <div className="header">
                 <div className="inner" style={{padding: '20px 5px'}}>
-                    <p><b>aquabook</b> is a prototype of a new kind of <b>spreadsheet</b></p>
-                    <p>it learns your <i>intent</i>, so you don't have to code</p>
+                    <div style={{fontSize: 34, paddingBottom: 10, textAlign: 'center'}}><b>aquabook</b> is a prototype of a new kind of <b>spreadsheet</b></div>
+                    <p>it infers <b>intent</b> from your <b>actions</b>, so you don't have to write <b>code</b></p>
                     <p>
                         <b>samples: </b> 
                             <a href="javascript:void(0)" onClick={e => 
-                                this.setState({ layout: require('./data/directors.json') })}>movie directors</a>, {' '}
+                                this.setState({ layout: (e.metaKey || e.shiftKey || e.ctrlKey) ? require('./data/directors-raw.json') : require('./data/directors.json') })}>movie directors</a>, {' '}
                             <a href="javascript:void(0)" onClick={e => 
-                                this.setState({ layout: require('./data/department.json') })}>company departments</a>, {' '}
+                                this.setState({ layout: (e.metaKey || e.shiftKey || e.ctrlKey) ? require('./data/department-raw.json') : require('./data/department.json') })}>company departments</a>, {' '}
                             <a href="javascript:void(0)" onClick={e => 
                                 this.setState({ layout: require('./data/sequence.json') })}>integer sequences</a>, {' '}
                             <a href="javascript:void(0)" onClick={e => 
@@ -344,12 +344,6 @@ export default class Demo extends React.Component {
                                 this.setState({ layout: require('./data/golden.json') })}>golden ratio</a>, {' '}
                             <a href="javascript:void(0)" onClick={e => 
                                 this.setState({ layout: require('./data/names.json') })}>names</a>
-                    </p>
-                    <p>
-
-                        {' '}(alternatively, raw data for <a href="javascript:void(0)" onClick={e => 
-                            this.setState({ layout: require('./data/directors-raw.json') })}>directors</a>, <a href="javascript:void(0)" onClick={e => 
-                            this.setState({ layout: require('./data/department-raw.json') })}>department</a>)
                     </p>
                 </div>
             </div>
