@@ -330,10 +330,16 @@ export default class Demo extends React.Component {
                     <p>it infers <b>intent</b> from your <b>actions</b>, so you don't have to write <b>code</b></p>
                     <p>
                         <b>samples: </b> 
+
                             <a href="javascript:void(0)" onClick={e => 
                                 this.setState({ layout: (e.metaKey || e.shiftKey || e.ctrlKey) ? require('./data/directors-raw.json') : require('./data/directors.json') })}>movie directors</a>, {' '}
                             <a href="javascript:void(0)" onClick={e => 
                                 this.setState({ layout: (e.metaKey || e.shiftKey || e.ctrlKey) ? require('./data/department-raw.json') : require('./data/department.json') })}>company departments</a>, {' '}
+
+                            <a href="javascript:void(0)" onClick={e => 
+                                this.setState({ layout: (e.metaKey || e.shiftKey || e.ctrlKey) ? require('./data/poets-raw.json') : require('./data/poets.json') })}>american poets</a>, {' '}
+
+                                
                             <a href="javascript:void(0)" onClick={e => 
                                 this.setState({ layout: require('./data/sequence.json') })}>integer sequences</a>, {' '}
                             <a href="javascript:void(0)" onClick={e => 

@@ -327,6 +327,7 @@ function* enumerateUnaryProgramsByInputs(inputs, output){
 
 function* factorizeString(inputs, output){
     for(let program of recursiveStringFactorization2(inputs, output)){
+
         var fixed = program
             .filter(k => !(typeof k == 'string' && k.length == 0))
             .reduce((acc, k) => {
@@ -400,15 +401,15 @@ function* recursiveStringFactorization2(inputs, output){
         input = input.toString()
         if(input.length == 0) continue;
 
+        if(name.indexOf('(-1)') > 0 || name.indexOf('(-2)') > 0) continue;
+        
         let pos = output.indexOf(input);
         if(pos != -1){
-            for(let prog of recursiveStringFactorization(inputs, output.slice(pos + input.length))){
+            for(let prog of recursiveStringFactorization2(inputs, output.slice(pos + input.length))){
                 yield [output.slice(0, pos), {input, name}].concat(prog);
                 yield [output.slice(0, pos + input.length)].concat(prog)
             }
         }
-
-
     }
 }
 
@@ -430,8 +431,6 @@ function* recursiveStringFactorization(inputs, output){
                 yield [output.slice(0, pos + input.length)].concat(prog)
             }
         }
-
-
     }
 }
 
